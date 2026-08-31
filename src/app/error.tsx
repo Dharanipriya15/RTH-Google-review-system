@@ -1,0 +1,2 @@
+"use client";
+export default function GlobalError({ reset }: { error: Error; reset: () => void }) { return <main className="grid min-h-screen place-items-center bg-cream px-6 text-center"><div><p className="eyebrow">Something went wrong</p><h1 className="mt-3 font-display text-3xl text-ink">Please try again.</h1><button className="button button-primary mt-7" onClick={reset}>Try again</button></div></main>; }
