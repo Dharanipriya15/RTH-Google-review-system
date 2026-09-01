@@ -3,7 +3,8 @@ import { BrandLogo } from "@/components/ui/brand-logo";
 import { ButtonLink } from "@/components/ui/button";
 
 export const metadata: Metadata = {
-  title: "Guest Feedback",
+  // Root page shares the layout segment, so the title template does not apply here.
+  title: { absolute: "Raade's Tea House · Guest Feedback" },
   description:
     "A calm, private way for guests of Raade's Tea House to share how their visit went.",
 };

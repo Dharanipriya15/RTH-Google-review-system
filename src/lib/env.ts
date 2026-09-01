@@ -23,9 +23,22 @@ function optional(value: string | undefined): string | undefined {
   return trimmed;
 }
 
+/**
+ * Canonical site origin. Prefers an explicit NEXT_PUBLIC_SITE_URL, then falls
+ * back to the Vercel-provided production domain (set automatically on Vercel),
+ * then localhost for local dev. Used only server-side, for metadata.
+ */
+function resolveSiteUrl(): string {
+  const explicit = process.env.NEXT_PUBLIC_SITE_URL?.trim();
+  if (explicit) return explicit.replace(/\/$/, "");
+  const vercel = process.env.VERCEL_PROJECT_PRODUCTION_URL?.trim();
+  if (vercel) return `https://${vercel}`;
+  return "http://localhost:3000";
+}
+
 /** Public config — safe to reference from Client Components. */
 export const publicEnv = {
-  siteUrl: process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000",
+  siteUrl: resolveSiteUrl(),
   supabaseUrl: process.env.NEXT_PUBLIC_SUPABASE_URL,
   supabaseAnonKey: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
   /** Fallback Google review URL; the business row in Supabase is the source of truth. */
