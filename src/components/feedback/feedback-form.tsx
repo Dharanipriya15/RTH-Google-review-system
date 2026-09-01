@@ -136,11 +136,11 @@ export function FeedbackForm({
       )}
 
       <Button type="submit" fullWidth loading={isSubmitting}>
-        {isSubmitting ? "Sending…" : "Submit feedback"}
+        {isSubmitting ? "Sending…" : "Submit Your Concern"}
       </Button>
       <p className="text-center text-caption">
-        Name, phone and message are all optional. Please don&apos;t share sensitive
-        personal details.
+        If you don&apos;t like your food, just ask our staff to replace it. We&apos;d be
+        happy to serve you again.
       </p>
     </form>
   );

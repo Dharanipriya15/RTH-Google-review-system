@@ -22,17 +22,17 @@ const siteUrl = publicEnv.siteUrl;
 export const metadata: Metadata = {
   metadataBase: new URL(siteUrl),
   title: {
-    default: "Raade's Tea House — Guest Feedback",
+    default: "Raade's Tea House",
     template: "%s · Raade's Tea House",
   },
   description:
-    "Share how your visit to Raade's Tea House went. Your feedback goes straight to our team.",
-  applicationName: "Raade's Tea House Feedback",
+    "Tell Raade's Tea House about your experience today. Your feedback goes straight to our team.",
+  applicationName: "Raade's Tea House",
   authors: [{ name: "Raade's Tea House" }],
   openGraph: {
-    title: "Raade's Tea House — Guest Feedback",
+    title: "Raade's Tea House",
     description:
-      "Share how your visit to Raade's Tea House went. Your feedback goes straight to our team.",
+      "Tell Raade's Tea House about your experience today. Your feedback goes straight to our team.",
     siteName: "Raade's Tea House",
     type: "website",
     url: siteUrl,
@@ -40,8 +40,8 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: "summary",
-    title: "Raade's Tea House — Guest Feedback",
-    description: "Share how your visit to Raade's Tea House went.",
+    title: "Raade's Tea House",
+    description: "Tell Raade's Tea House about your experience today.",
     images: ["/raade-logo.png"],
   },
 };

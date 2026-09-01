@@ -12,6 +12,18 @@ const nextConfig: NextConfig = {
   async headers() {
     return [{ source: "/:path*", headers: securityHeaders }];
   },
+  // Customers opening the root link land directly on the rating page and never
+  // see the landing page. The landing page component (src/app/page.tsx) is
+  // kept intact, just not reachable at "/".
+  async redirects() {
+    return [
+      {
+        source: "/",
+        destination: "/review/raades-tea-house",
+        permanent: false,
+      },
+    ];
+  },
 };
 
 export default nextConfig;

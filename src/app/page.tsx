@@ -4,9 +4,9 @@ import { ButtonLink } from "@/components/ui/button";
 
 export const metadata: Metadata = {
   // Root page shares the layout segment, so the title template does not apply here.
-  title: { absolute: "Raade's Tea House · Guest Feedback" },
+  title: { absolute: "Raade's Tea House" },
   description:
-    "A calm, private way for guests of Raade's Tea House to share how their visit went.",
+    "A calm, private way for guests of Raade's Tea House to share their experience.",
 };
 
 export default function Home() {
@@ -42,7 +42,7 @@ export default function Home() {
             </p>
             <div className="mt-8 flex flex-col items-center justify-center gap-3 sm:flex-row">
               <ButtonLink href="/review/raades-tea-house" fullWidth className="sm:w-auto">
-                Share your visit
+                Rate your experience
               </ButtonLink>
               <ButtonLink
                 href="/admin"

@@ -75,7 +75,9 @@ export function FeedbackExperience({
             <div className="relative flex justify-center">
               <BrandLogo variant="bare" size="lg" priority />
             </div>
-            <p className="eyebrow eyebrow-on-dark relative mt-4">Guest feedback</p>
+            <p className="eyebrow eyebrow-on-dark relative mt-4">
+              Your Satisfaction is important to us
+            </p>
           </div>
 
           {/* Body */}
@@ -86,7 +88,9 @@ export function FeedbackExperience({
               <ThankYouState isLowRating={isLowRating} onStartAgain={startAgain} />
             ) : (
               <>
-                <h1 className="display-lg text-ink">How was your visit?</h1>
+                <h1 className="display-lg text-ink">
+                  How is your experience with us today?
+                </h1>
                 <p className="mx-auto mt-2.5 max-w-sm text-sm leading-6 text-ink-muted sm:text-base">
                   It takes less than a minute and it genuinely helps us improve.
                 </p>

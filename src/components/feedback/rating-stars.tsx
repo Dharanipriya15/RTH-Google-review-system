@@ -8,7 +8,7 @@ const RATINGS: Rating[] = [1, 2, 3, 4, 5];
 const ratingLabels: Record<Rating, string> = {
   1: "Very disappointing",
   2: "Disappointing",
-  3: "It was fine",
+  3: "It was just Ok",
   4: "Really good",
   5: "Exceptional",
 };
