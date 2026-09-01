@@ -1,1 +1,12 @@
-export default function Loading() { return <main className="grid min-h-screen place-items-center bg-cream"><div className="text-center" role="status"><div className="mx-auto h-8 w-8 animate-spin rounded-full border-2 border-sand border-t-tea" /><p className="mt-4 text-sm text-ink-muted">Preparing your experience…</p></div></main>; }
+export default function Loading() {
+  return (
+    <main className="grid min-h-svh place-items-center px-6">
+      <div className="animate-fade text-center" role="status" aria-live="polite">
+        <span className="mx-auto flex justify-center">
+          <span className="spinner size-8 text-green" />
+        </span>
+        <p className="mt-4 text-sm text-ink-muted">One moment…</p>
+      </div>
+    </main>
+  );
+}

@@ -5,10 +5,24 @@ import { getBusinessBySlug } from "@/lib/feedback/business";
 
 export const dynamic = "force-dynamic";
 
-export const metadata: Metadata = {
-  title: "Share your visit",
-  robots: { index: false, follow: false },
-};
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ slug: string }>;
+}): Promise<Metadata> {
+  const { slug } = await params;
+  const business = await getBusinessBySlug(slug);
+  const name = business?.name ?? "Raade's Tea House";
+  return {
+    title: "Share your visit",
+    description: `Tell ${name} how your visit went — it takes less than a minute.`,
+    robots: { index: false, follow: false },
+    openGraph: {
+      title: `Share your visit · ${name}`,
+      description: `Tell ${name} how your visit went.`,
+    },
+  };
+}
 
 export default async function ReviewPage({
   params,

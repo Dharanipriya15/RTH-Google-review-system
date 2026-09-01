@@ -14,19 +14,19 @@ export function RedirectingState({ redirectUrl }: { redirectUrl: string }) {
   }, [redirectUrl]);
 
   return (
-    <div className="py-4 text-center">
-      <div
-        aria-hidden="true"
-        className="mx-auto grid h-16 w-16 place-items-center rounded-full bg-[#edf2e9] text-3xl"
-      >
-        ★
+    <div className="animate-rise py-2 text-center">
+      <div className="mx-auto flex justify-center" aria-hidden="true">
+        <span className="relative grid size-16 place-items-center">
+          <span className="absolute inset-0 rounded-full border border-green/25" />
+          <span className="spinner size-7 text-green" />
+        </span>
       </div>
-      <h2 className="mt-6 font-display text-3xl text-ink">Thank you!</h2>
-      <p className="mx-auto mt-3 max-w-sm text-sm leading-6 text-ink-muted" role="status">
-        We&apos;re taking you to Google to share your review. If nothing happens, use the
-        button below.
+      <h2 className="display-md mt-5 text-ink">One more thing</h2>
+      <p className="mx-auto mt-2 max-w-xs text-sm leading-6 text-ink-muted" role="status">
+        We&apos;re opening Google so you can share your review. If it doesn&apos;t open,
+        use the button below.
       </p>
-      <div className="mx-auto mt-7 max-w-sm">
+      <div className="mx-auto mt-6 max-w-xs">
         <GoogleReviewButton url={redirectUrl} />
       </div>
     </div>

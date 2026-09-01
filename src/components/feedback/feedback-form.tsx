@@ -1,8 +1,10 @@
 "use client";
 
-import { useId, useState } from "react";
+import { useState } from "react";
 import type { FeedbackFieldErrors, Rating } from "@/lib/feedback/types";
 import { submitFeedback } from "@/lib/feedback/submit-feedback";
+import { Button } from "@/components/ui/button";
+import { TextField, TextArea } from "@/components/ui/field";
 
 interface FeedbackFormProps {
   businessSlug: string;
@@ -24,7 +26,6 @@ export function FeedbackForm({
   isLowRating,
   onSuccess,
 }: FeedbackFormProps) {
-  const fieldId = useId();
   const [name, setName] = useState("");
   const [phone, setPhone] = useState("");
   const [message, setMessage] = useState("");
@@ -69,59 +70,56 @@ export function FeedbackForm({
       setSubmitError(
         error instanceof Error
           ? error.message
-          : "We could not submit your feedback. Please try again.",
+          : "We couldn't submit your feedback. Please try again.",
       );
       setIsSubmitting(false);
     }
   }
 
   return (
-    <form className="mt-7 space-y-5 text-left" noValidate onSubmit={handleSubmit}>
-      <div className="grid gap-5 sm:grid-cols-2">
-        <Field id={`${fieldId}-name`} label="Name" error={errors.customerName}>
-          <input
-            className="field"
-            id={`${fieldId}-name`}
-            autoComplete="name"
-            maxLength={NAME_MAX}
-            value={name}
-            onChange={(event) => setName(event.target.value)}
-          />
-        </Field>
-        <Field id={`${fieldId}-phone`} label="Phone number" error={errors.customerPhone}>
-          <input
-            className="field"
-            id={`${fieldId}-phone`}
-            type="tel"
-            inputMode="tel"
-            autoComplete="tel"
-            maxLength={PHONE_MAX}
-            value={phone}
-            onChange={(event) => setPhone(event.target.value)}
-          />
-        </Field>
+    <form className="mt-6 space-y-4 text-left" noValidate onSubmit={handleSubmit}>
+      <div className="grid gap-4 sm:grid-cols-2">
+        <TextField
+          label="Name"
+          optional
+          autoComplete="name"
+          maxLength={NAME_MAX}
+          value={name}
+          onChange={(event) => setName(event.target.value)}
+          error={errors.customerName}
+        />
+        <TextField
+          label="Phone"
+          optional
+          type="tel"
+          inputMode="tel"
+          autoComplete="tel"
+          maxLength={PHONE_MAX}
+          value={phone}
+          onChange={(event) => setPhone(event.target.value)}
+          error={errors.customerPhone}
+        />
       </div>
 
-      <Field id={`${fieldId}-message`} label="Feedback" error={errors.message}>
-        <textarea
-          className="field min-h-28 resize-y"
-          id={`${fieldId}-message`}
-          maxLength={MESSAGE_MAX}
-          placeholder={
-            isLowRating
-              ? "Tell us what went wrong so we can put it right."
-              : "Anything you'd like to share?"
-          }
-          value={message}
-          onChange={(event) => setMessage(event.target.value)}
-        />
-      </Field>
+      <TextArea
+        label={isLowRating ? "What went wrong?" : "Anything to add?"}
+        optional
+        maxLength={MESSAGE_MAX}
+        placeholder={
+          isLowRating
+            ? "Tell us what happened so we can put it right."
+            : "Share what made your visit memorable."
+        }
+        value={message}
+        onChange={(event) => setMessage(event.target.value)}
+        error={errors.message}
+      />
 
       {/* Honeypot — hidden from real users. */}
       <div aria-hidden="true" className="hidden">
-        <label htmlFor={`${fieldId}-company`}>Company website</label>
+        <label htmlFor="company_website">Company website</label>
         <input
-          id={`${fieldId}-company`}
+          id="company_website"
           name="company_website"
           tabIndex={-1}
           autoComplete="off"
@@ -129,49 +127,21 @@ export function FeedbackForm({
       </div>
 
       {submitError && (
-        <p className="rounded-xl bg-red-50 px-4 py-3 text-sm text-red-800" role="alert">
+        <p
+          role="alert"
+          className="rounded-md border border-danger-tint bg-danger-tint px-4 py-3 text-sm font-medium text-danger"
+        >
           {submitError}
         </p>
       )}
 
-      <button
-        className="button button-primary w-full disabled:cursor-not-allowed disabled:opacity-60"
-        disabled={isSubmitting}
-        type="submit"
-      >
-        {isSubmitting ? "Submitting…" : "Submit feedback"}
-      </button>
-      <p className="text-center text-xs leading-5 text-ink-muted">
-        Name, phone and feedback are all optional. Please don&apos;t include sensitive
-        personal information.
+      <Button type="submit" fullWidth loading={isSubmitting}>
+        {isSubmitting ? "Sending…" : "Submit feedback"}
+      </Button>
+      <p className="text-center text-caption">
+        Name, phone and message are all optional. Please don&apos;t share sensitive
+        personal details.
       </p>
     </form>
-  );
-}
-
-function Field({
-  children,
-  error,
-  id,
-  label,
-}: {
-  children: React.ReactNode;
-  error?: string;
-  id: string;
-  label: string;
-}) {
-  return (
-    <div>
-      <label className="mb-2 flex text-sm font-bold text-ink" htmlFor={id}>
-        {label}
-        <span className="ml-1 font-normal text-ink-muted">(optional)</span>
-      </label>
-      {children}
-      {error && (
-        <p className="mt-1.5 text-xs font-medium text-red-700" role="alert">
-          {error}
-        </p>
-      )}
-    </div>
   );
 }

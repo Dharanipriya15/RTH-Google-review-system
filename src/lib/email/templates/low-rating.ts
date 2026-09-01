@@ -31,10 +31,10 @@ export function renderLowRatingEmail(input: LowRatingEmailInput): {
     feedbackId,
   } = input;
 
-  const when = new Intl.DateTimeFormat("en-IN", {
+  const when = new Intl.DateTimeFormat("en-AU", {
     dateStyle: "medium",
     timeStyle: "short",
-    timeZone: "Asia/Kolkata",
+    timeZone: "Australia/Melbourne",
   }).format(submittedAt);
 
   const stars = "★".repeat(rating) + "☆".repeat(5 - rating);
@@ -52,7 +52,7 @@ export function renderLowRatingEmail(input: LowRatingEmailInput): {
     `Phone: ${phone}`,
     `Message: ${body}`,
     "",
-    `Submitted: ${when} (Asia/Kolkata)`,
+    `Submitted: ${when} (Melbourne)`,
     `Reference: ${feedbackId}`,
   ].join("\n");
 
@@ -73,7 +73,7 @@ export function renderLowRatingEmail(input: LowRatingEmailInput): {
             <tr><td style="padding:6px 0;color:#706b60;width:120px;">Customer</td><td style="padding:6px 0;">${escapeHtml(name)}</td></tr>
             <tr><td style="padding:6px 0;color:#706b60;">Phone</td><td style="padding:6px 0;">${phoneCell}</td></tr>
             <tr><td style="padding:6px 0;color:#706b60;vertical-align:top;">Message</td><td style="padding:6px 0;white-space:pre-wrap;">${escapeHtml(body)}</td></tr>
-            <tr><td style="padding:6px 0;color:#706b60;">Submitted</td><td style="padding:6px 0;">${escapeHtml(when)} (Asia/Kolkata)</td></tr>
+            <tr><td style="padding:6px 0;color:#706b60;">Submitted</td><td style="padding:6px 0;">${escapeHtml(when)} (Melbourne)</td></tr>
           </table>
           <p style="margin:20px 0 0;font-size:12px;color:#9a9386;">Reference: ${escapeHtml(feedbackId)}</p>
         </td>

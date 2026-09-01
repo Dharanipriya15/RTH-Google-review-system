@@ -1,5 +1,60 @@
-import Link from "next/link";
+import type { Metadata } from "next";
+import { BrandLogo } from "@/components/ui/brand-logo";
+import { ButtonLink } from "@/components/ui/button";
+
+export const metadata: Metadata = {
+  title: "Guest Feedback",
+  description:
+    "A calm, private way for guests of Raade's Tea House to share how their visit went.",
+};
 
 export default function Home() {
-  return <main className="mx-auto flex min-h-screen w-full max-w-5xl flex-col justify-center px-6 py-16"><p className="eyebrow">Raade&apos;s Tea House</p><h1 className="mt-4 max-w-2xl text-4xl font-semibold tracking-tight text-ink sm:text-6xl">Thoughtful feedback, beautifully handled.</h1><p className="mt-6 max-w-xl text-lg leading-8 text-ink-muted">A private, respectful feedback experience for every guest and a clear workspace for the team.</p><div className="mt-10 flex flex-wrap gap-3"><Link className="button button-primary" href="/review/raades-tea-house">Open customer experience</Link><Link className="button button-secondary" href="/admin">Open admin</Link></div></main>;
+  return (
+    <main className="relative flex min-h-svh flex-col items-center justify-center overflow-hidden px-4 py-10 sm:px-6">
+      <div
+        aria-hidden="true"
+        className="pointer-events-none absolute -left-32 top-0 size-96 rounded-full bg-green-tint blur-3xl"
+      />
+      <div
+        aria-hidden="true"
+        className="pointer-events-none absolute -bottom-40 -right-32 size-96 rounded-full bg-gold-tint blur-3xl"
+      />
+
+      <div className="animate-rise relative w-full max-w-xl">
+        <div className="card overflow-hidden text-center">
+          <div className="panel-green grain px-6 pb-9 pt-11">
+            <div className="relative flex justify-center">
+              <BrandLogo variant="bare" size="lg" priority />
+            </div>
+            <p className="eyebrow eyebrow-on-dark relative mt-5">Raade&apos;s Tea House</p>
+            <h1 className="display-hero relative mt-3 text-white">
+              Every visit,
+              <br />
+              worth hearing about
+            </h1>
+          </div>
+
+          <div className="stagger px-6 py-9 sm:px-10">
+            <p className="mx-auto max-w-md text-ink-soft">
+              A quiet, private space for our guests to tell us how things went — and for
+              our team to listen closely.
+            </p>
+            <div className="mt-8 flex flex-col items-center justify-center gap-3 sm:flex-row">
+              <ButtonLink href="/review/raades-tea-house" fullWidth className="sm:w-auto">
+                Share your visit
+              </ButtonLink>
+              <ButtonLink
+                href="/admin"
+                variant="secondary"
+                fullWidth
+                className="sm:w-auto"
+              >
+                Team sign-in
+              </ButtonLink>
+            </div>
+          </div>
+        </div>
+      </div>
+    </main>
+  );
 }

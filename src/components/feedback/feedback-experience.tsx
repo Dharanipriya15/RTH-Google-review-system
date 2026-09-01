@@ -5,6 +5,7 @@ import { FeedbackForm } from "@/components/feedback/feedback-form";
 import { RatingStars } from "@/components/feedback/rating-stars";
 import { RedirectingState } from "@/components/feedback/redirecting-state";
 import { ThankYouState } from "@/components/feedback/thank-you-state";
+import { BrandLogo } from "@/components/ui/brand-logo";
 import { GOOGLE_REVIEW_MIN_RATING, type Rating } from "@/lib/feedback/types";
 
 interface FeedbackExperienceProps {
@@ -19,26 +20,18 @@ type Step =
   | { name: "redirecting"; redirectUrl: string };
 
 function RatingIntro({ isLowRating }: { isLowRating: boolean }) {
-  if (isLowRating) {
-    return (
-      <>
-        <h2 className="mt-8 font-display text-2xl text-ink">
-          Tell us how we can do better
-        </h2>
-        <p className="mt-2 text-sm leading-6 text-ink-muted">
-          This goes privately to our team — it is not posted publicly and is never
-          sent to Google.
-        </p>
-      </>
-    );
-  }
   return (
-    <>
-      <h2 className="mt-8 font-display text-2xl text-ink">Thank you!</h2>
-      <p className="mt-2 text-sm leading-6 text-ink-muted">
-        We&apos;d love to hear anything else you want to share.
+    <div className="animate-fade mt-7">
+      <p className="eyebrow">{isLowRating ? "In confidence" : "Almost done"}</p>
+      <h2 className="display-md mt-1.5 text-ink">
+        {isLowRating ? "Tell us how we can do better" : "Add a few words"}
+      </h2>
+      <p className="mx-auto mt-2 max-w-sm text-sm leading-6 text-ink-muted">
+        {isLowRating
+          ? "This goes privately to our team. It is never posted publicly or sent to Google."
+          : "Optional — but we love hearing what made your visit special."}
       </p>
-    </>
+    </div>
   );
 }
 
@@ -50,8 +43,7 @@ export function FeedbackExperience({
   const [rating, setRating] = useState<Rating | null>(null);
   const [step, setStep] = useState<Step>({ name: "collecting" });
 
-  // Ratings below this get the private feedback form, never Google. The server
-  // enforces the same rule; this is only for what the customer sees.
+  // The server enforces the same rule; this only controls what the guest sees.
   const googleThreshold = Math.max(GOOGLE_REVIEW_MIN_RATING, positiveRatingMin);
   const isLowRating = rating !== null && rating < googleThreshold;
 
@@ -66,64 +58,78 @@ export function FeedbackExperience({
   }
 
   return (
-    <main className="relative grid min-h-screen place-items-center overflow-hidden bg-cream px-4 py-6 sm:px-6 sm:py-10">
+    <main className="relative flex min-h-svh flex-col items-center justify-center overflow-hidden px-4 py-8 sm:px-6 sm:py-12">
       <div
         aria-hidden="true"
-        className="absolute -left-28 -top-24 h-72 w-72 rounded-full bg-[#e8d7b4]/45 blur-3xl"
+        className="pointer-events-none absolute -left-32 -top-28 size-80 rounded-full bg-green-tint blur-3xl"
       />
       <div
         aria-hidden="true"
-        className="absolute -bottom-32 -right-24 h-72 w-72 rounded-full bg-[#d6e1cf]/45 blur-3xl"
+        className="pointer-events-none absolute -bottom-36 -right-28 size-80 rounded-full bg-gold-tint blur-3xl"
       />
-      <section className="relative w-full max-w-lg rounded-[2rem] border border-[#e7dac1] bg-white/95 px-5 py-8 text-center shadow-[0_18px_55px_rgba(70,58,34,0.12)] sm:px-10 sm:py-10">
-        <p className="eyebrow">{businessName}</p>
 
-        {step.name === "redirecting" ? (
-          <RedirectingState redirectUrl={step.redirectUrl} />
-        ) : step.name === "thank_you" ? (
-          <ThankYouState isLowRating={isLowRating} onStartAgain={startAgain} />
-        ) : (
-          <>
-            <h1 className="mt-4 font-display text-[2.35rem] leading-[1.08] text-ink sm:text-5xl">
-              How was your experience?
-            </h1>
-            <p className="mt-3 text-sm leading-6 text-ink-muted sm:text-base">
-              Your feedback helps us serve you better.
-            </p>
-            <div className="mt-8">
-              <RatingStars onChange={chooseRating} value={rating} />
+      <div className="animate-rise relative w-full max-w-lg">
+        <div className="card overflow-hidden">
+          {/* Letterhead */}
+          <div className="panel-green grain relative px-6 pb-7 pt-9 text-center">
+            <div className="relative flex justify-center">
+              <BrandLogo variant="bare" size="lg" priority />
             </div>
+            <p className="eyebrow eyebrow-on-dark relative mt-4">Guest feedback</p>
+          </div>
 
-            {rating !== null && (
-              <div className="animate-in fade-in slide-in-from-bottom-2 duration-300">
-                <RatingIntro isLowRating={isLowRating} />
-                <FeedbackForm
-                  key={rating}
-                  businessSlug={businessSlug}
-                  rating={rating}
-                  isLowRating={isLowRating}
-                  onSuccess={({ outcome, redirectUrl }) => {
-                    // Hard client-side rule: 1–3 stars are ALWAYS private and
-                    // never go to Google — even if the API response says
-                    // outcome "redirect_to_google" and includes a redirectUrl,
-                    // we ignore it here. Only 4–5 stars may redirect.
-                    const ratingAllowsGoogle = rating >= GOOGLE_REVIEW_MIN_RATING;
-                    if (
-                      ratingAllowsGoogle &&
-                      outcome === "redirect_to_google" &&
-                      redirectUrl
-                    ) {
-                      setStep({ name: "redirecting", redirectUrl });
-                    } else {
-                      setStep({ name: "thank_you" });
-                    }
-                  }}
-                />
-              </div>
+          {/* Body */}
+          <div className="px-5 py-8 text-center sm:px-9 sm:py-10">
+            {step.name === "redirecting" ? (
+              <RedirectingState redirectUrl={step.redirectUrl} />
+            ) : step.name === "thank_you" ? (
+              <ThankYouState isLowRating={isLowRating} onStartAgain={startAgain} />
+            ) : (
+              <>
+                <h1 className="display-lg text-ink">How was your visit?</h1>
+                <p className="mx-auto mt-2.5 max-w-sm text-sm leading-6 text-ink-muted sm:text-base">
+                  It takes less than a minute and it genuinely helps us improve.
+                </p>
+
+                <div className="mt-7">
+                  <RatingStars onChange={chooseRating} value={rating} />
+                </div>
+
+                {rating !== null && (
+                  <>
+                    <RatingIntro isLowRating={isLowRating} />
+                    <FeedbackForm
+                      key={rating}
+                      businessSlug={businessSlug}
+                      rating={rating}
+                      isLowRating={isLowRating}
+                      onSuccess={({ outcome, redirectUrl }) => {
+                        // Hard client-side rule: ratings below the threshold are
+                        // ALWAYS private. Even if the API says otherwise, ignore
+                        // any redirect here. Only 4–5 stars may go to Google.
+                        const ratingAllowsGoogle = rating >= GOOGLE_REVIEW_MIN_RATING;
+                        if (
+                          ratingAllowsGoogle &&
+                          outcome === "redirect_to_google" &&
+                          redirectUrl
+                        ) {
+                          setStep({ name: "redirecting", redirectUrl });
+                        } else {
+                          setStep({ name: "thank_you" });
+                        }
+                      }}
+                    />
+                  </>
+                )}
+              </>
             )}
-          </>
-        )}
-      </section>
+          </div>
+        </div>
+
+        <p className="mt-5 text-center text-caption">
+          {businessName} · Your feedback is kept private
+        </p>
+      </div>
     </main>
   );
 }

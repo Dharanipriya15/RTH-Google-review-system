@@ -1,22 +1,55 @@
 "use client";
 
-import { FormEvent, useState } from "react";
+import { type FormEvent, useState } from "react";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
+import { Button } from "@/components/ui/button";
+import { TextField } from "@/components/ui/field";
+
+type State = { kind: "idle" | "sending" | "sent" | "error" };
 
 export function AdminSignInForm() {
   const [email, setEmail] = useState("");
-  const [message, setMessage] = useState<string | null>(null);
-  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [state, setState] = useState<State>({ kind: "idle" });
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    setIsSubmitting(true);
-    setMessage(null);
+    setState({ kind: "sending" });
     const supabase = createSupabaseBrowserClient();
-    const { error } = await supabase.auth.signInWithOtp({ email, options: { emailRedirectTo: `${window.location.origin}/auth/callback?next=/admin` } });
-    setIsSubmitting(false);
-    setMessage(error ? "We could not send a sign-in link. Please try again." : "Check your inbox for a secure sign-in link.");
+    const { error } = await supabase.auth.signInWithOtp({
+      email,
+      options: {
+        emailRedirectTo: `${window.location.origin}/auth/callback?next=/admin`,
+      },
+    });
+    setState({ kind: error ? "error" : "sent" });
   }
 
-  return <form className="mt-8 space-y-4" onSubmit={handleSubmit}><label className="block text-left text-sm font-bold text-ink" htmlFor="email">Admin email</label><input className="w-full rounded-xl border border-sand bg-white px-4 py-3 text-ink outline-none ring-tea focus:ring-2" id="email" type="email" autoComplete="email" value={email} onChange={(event) => setEmail(event.target.value)} required /><button className="button button-primary w-full" disabled={isSubmitting} type="submit">{isSubmitting ? "Sending…" : "Email me a sign-in link"}</button>{message && <p className="text-sm text-ink-muted" role="status">{message}</p>}</form>;
+  if (state.kind === "sent") {
+    return (
+      <div className="mt-6 rounded-md border border-green-tint bg-green-tint px-4 py-4 text-sm leading-6 text-green-deep">
+        Check <span className="font-semibold">{email}</span> for a secure sign-in link.
+      </div>
+    );
+  }
+
+  return (
+    <form className="mt-6 space-y-4 text-left" onSubmit={handleSubmit}>
+      <TextField
+        label="Work email"
+        type="email"
+        autoComplete="email"
+        required
+        placeholder="you@example.com"
+        value={email}
+        onChange={(event) => setEmail(event.target.value)}
+        error={state.kind === "error" ? "Couldn't send the link. Try again." : undefined}
+      />
+      <Button type="submit" fullWidth loading={state.kind === "sending"}>
+        {state.kind === "sending" ? "Sending…" : "Email me a sign-in link"}
+      </Button>
+      <p className="text-center text-caption">
+        No password — we email you a one-time link.
+      </p>
+    </form>
+  );
 }
