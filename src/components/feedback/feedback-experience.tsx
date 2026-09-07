@@ -12,6 +12,8 @@ interface FeedbackExperienceProps {
   businessSlug: string;
   businessName: string;
   positiveRatingMin: number;
+  /** Resolved, https-only Google review URL, or null if none is configured. */
+  googleReviewUrl: string | null;
 }
 
 type Step =
@@ -39,6 +41,7 @@ export function FeedbackExperience({
   businessSlug,
   businessName,
   positiveRatingMin,
+  googleReviewUrl,
 }: FeedbackExperienceProps) {
   const [rating, setRating] = useState<Rating | null>(null);
   const [step, setStep] = useState<Step>({ name: "collecting" });
@@ -49,6 +52,16 @@ export function FeedbackExperience({
 
   function chooseRating(next: Rating) {
     setRating(next);
+    if (next >= googleThreshold) {
+      // 4–5★: skip the form entirely and never touch the backend — nothing
+      // is ever saved to Supabase or the Google Sheet for a positive rating.
+      if (googleReviewUrl) {
+        setStep({ name: "redirecting", redirectUrl: googleReviewUrl });
+      } else {
+        setStep({ name: "thank_you" });
+      }
+      return;
+    }
     setStep({ name: "collecting" });
   }
 
@@ -107,21 +120,7 @@ export function FeedbackExperience({
                       businessSlug={businessSlug}
                       rating={rating}
                       isLowRating={isLowRating}
-                      onSuccess={({ outcome, redirectUrl }) => {
-                        // Hard client-side rule: ratings below the threshold are
-                        // ALWAYS private. Even if the API says otherwise, ignore
-                        // any redirect here. Only 4–5 stars may go to Google.
-                        const ratingAllowsGoogle = rating >= GOOGLE_REVIEW_MIN_RATING;
-                        if (
-                          ratingAllowsGoogle &&
-                          outcome === "redirect_to_google" &&
-                          redirectUrl
-                        ) {
-                          setStep({ name: "redirecting", redirectUrl });
-                        } else {
-                          setStep({ name: "thank_you" });
-                        }
-                      }}
+                      onSuccess={() => setStep({ name: "thank_you" })}
                     />
                   </>
                 )}

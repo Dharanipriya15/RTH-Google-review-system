@@ -17,10 +17,24 @@ function required(name: string, value: string | undefined): string {
 function optional(value: string | undefined): string | undefined {
   const trimmed = value?.trim();
   if (!trimmed) return undefined;
-  if (/REPLACE_WITH|your-verified-domain|your_api_key|your-domain\.com/i.test(trimmed)) {
+  if (
+    /REPLACE_WITH|your-verified-domain|your_api_key|your-domain\.com|your-project|your-spreadsheet-id/i.test(
+      trimmed,
+    )
+  ) {
     return undefined;
   }
   return trimmed;
+}
+
+/**
+ * Service-account private keys are often pasted into a single-line env var
+ * with literal `\n` escapes (required by most hosts, including Vercel).
+ * Turn those into real newlines so the PEM parses correctly.
+ */
+function normalizePrivateKey(value: string | undefined): string | undefined {
+  const normalized = optional(value)?.replace(/\\n/g, "\n");
+  return normalized && normalized.includes("BEGIN PRIVATE KEY") ? normalized : undefined;
 }
 
 /**
@@ -58,26 +72,49 @@ export function getSupabasePublicConfig() {
 }
 
 /**
+ * Google Sheets destination for 1–3★ (private) feedback, written via a
+ * service account. `null` when any of the three required values is unset or
+ * still a placeholder — callers must treat that as "not configured" and fail
+ * loudly rather than silently skipping the write.
+ */
+export interface GoogleSheetsConfig {
+  spreadsheetId: string;
+  clientEmail: string;
+  privateKey: string;
+  /** Optional sheet/tab name; falls back to the first tab when unset. */
+  sheetName: string | undefined;
+}
+
+function resolveGoogleSheetsConfig(): GoogleSheetsConfig | null {
+  const spreadsheetId = optional(process.env.GOOGLE_SHEETS_SPREADSHEET_ID);
+  const clientEmail = optional(process.env.GOOGLE_SHEETS_CLIENT_EMAIL);
+  const privateKey = normalizePrivateKey(process.env.GOOGLE_SHEETS_PRIVATE_KEY);
+  if (!spreadsheetId || !clientEmail || !privateKey) return null;
+  return {
+    spreadsheetId,
+    clientEmail,
+    privateKey,
+    sheetName: optional(process.env.GOOGLE_SHEETS_SHEET_NAME),
+  };
+}
+
+/**
  * Server-only config.
  *
  * Supabase credentials are REQUIRED — without them nothing works, so a missing
- * value throws loudly. Resend credentials are OPTIONAL here: if they are unset
- * or still placeholders, feedback is still saved and the customer flow is
- * unaffected — only the owner email is skipped (and logged). See
- * `isEmailConfigured()` in `lib/email/resend.ts`.
+ * value throws loudly. Google Sheets credentials are read as a single
+ * `googleSheets` object that is `null` when incomplete; `processFeedbackSubmission`
+ * treats a missing config as a hard failure for 1–3★ submissions (it must never
+ * report success without a row actually being written to the sheet).
  */
 export function getServerEnv() {
-  const ownerEmail = optional(process.env.OWNER_NOTIFICATION_EMAIL);
   return {
     supabaseUrl: required("NEXT_PUBLIC_SUPABASE_URL", publicEnv.supabaseUrl),
     supabaseServiceRoleKey: required(
       "SUPABASE_SERVICE_ROLE_KEY",
       process.env.SUPABASE_SERVICE_ROLE_KEY,
     ),
-    resendApiKey: optional(process.env.RESEND_API_KEY),
-    resendFromEmail: optional(process.env.RESEND_FROM_EMAIL),
-    /** Optional override; falls back to businesses.owner_email in the database. */
-    ownerNotificationEmail: ownerEmail && ownerEmail.includes("@") ? ownerEmail : undefined,
+    googleSheets: resolveGoogleSheetsConfig(),
     ipHashSalt: process.env.FEEDBACK_IP_HASH_SALT?.trim() || "raades-dev-salt",
     rateLimitMax: Number(process.env.RATE_LIMIT_MAX_PER_WINDOW ?? "3"),
     rateLimitWindowMs:

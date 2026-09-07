@@ -92,7 +92,7 @@ export async function POST(request: NextRequest) {
 
   // Honeypot: silently accept and discard obvious bots.
   if (input.company_website && input.company_website.trim() !== "") {
-    return json({ ok: true, outcome: "thank_you", redirectUrl: null, duplicate: false }, 200);
+    return json({ ok: true, duplicate: false }, 200);
   }
 
   const { status, body } = await processFeedbackSubmission(input, {

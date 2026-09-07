@@ -10,15 +10,14 @@ interface FeedbackFormProps {
   businessSlug: string;
   rating: Rating;
   isLowRating: boolean;
-  onSuccess: (result: {
-    outcome: "thank_you" | "redirect_to_google";
-    redirectUrl: string | null;
-  }) => void;
+  onSuccess: (result: { duplicate: boolean }) => void;
 }
 
 const MESSAGE_MAX = 2000;
 const NAME_MAX = 120;
 const PHONE_MAX = 32;
+const EMAIL_MAX = 254;
+const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 export function FeedbackForm({
   businessSlug,
@@ -28,6 +27,7 @@ export function FeedbackForm({
 }: FeedbackFormProps) {
   const [name, setName] = useState("");
   const [phone, setPhone] = useState("");
+  const [email, setEmail] = useState("");
   const [message, setMessage] = useState("");
   const [errors, setErrors] = useState<FeedbackFieldErrors>({});
   const [submitError, setSubmitError] = useState<string | null>(null);
@@ -40,6 +40,10 @@ export function FeedbackForm({
     const trimmedPhone = phone.trim();
     if (trimmedPhone && !/^[+()\-\s\d]{6,32}$/.test(trimmedPhone)) {
       next.customerPhone = "Please enter a valid phone number.";
+    }
+    const trimmedEmail = email.trim();
+    if (trimmedEmail && (trimmedEmail.length > EMAIL_MAX || !EMAIL_PATTERN.test(trimmedEmail))) {
+      next.customerEmail = "Please enter a valid email address.";
     }
     return next;
   }
@@ -63,9 +67,10 @@ export function FeedbackForm({
         message: message.trim() || undefined,
         customerName: name.trim() || undefined,
         customerPhone: phone.trim() || undefined,
+        customerEmail: email.trim() || undefined,
         companyWebsite: typeof companyWebsite === "string" ? companyWebsite : undefined,
       });
-      onSuccess({ outcome: result.outcome, redirectUrl: result.redirectUrl });
+      onSuccess({ duplicate: result.duplicate });
     } catch (error) {
       setSubmitError(
         error instanceof Error
@@ -100,6 +105,18 @@ export function FeedbackForm({
           error={errors.customerPhone}
         />
       </div>
+
+      <TextField
+        label="Email"
+        optional
+        type="email"
+        inputMode="email"
+        autoComplete="email"
+        maxLength={EMAIL_MAX}
+        value={email}
+        onChange={(event) => setEmail(event.target.value)}
+        error={errors.customerEmail}
+      />
 
       <TextArea
         label={isLowRating ? "What went wrong?" : "Anything to add?"}

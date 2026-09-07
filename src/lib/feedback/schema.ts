@@ -3,6 +3,7 @@ import { z } from "zod";
 const MESSAGE_MAX = 2000;
 const NAME_MAX = 120;
 const PHONE_MAX = 32;
+const EMAIL_MAX = 254;
 
 /** Collapse whitespace and trim; return undefined for empty strings. */
 const optionalText = (max: number) =>
@@ -41,6 +42,10 @@ export const feedbackSchema = z.object({
   customerPhone: optionalText(PHONE_MAX).refine(
     (value) => value === undefined || /^[+()\-\s\d]{6,32}$/.test(value),
     { message: "Please enter a valid phone number." },
+  ),
+  customerEmail: optionalText(EMAIL_MAX).refine(
+    (value) => value === undefined || z.email().safeParse(value).success,
+    { message: "Please enter a valid email address." },
   ),
   company_website: z.string().optional(),
 });

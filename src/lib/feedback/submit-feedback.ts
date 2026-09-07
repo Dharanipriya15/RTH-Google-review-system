@@ -6,6 +6,7 @@ export interface SubmitFeedbackInput {
   message?: string;
   customerName?: string;
   customerPhone?: string;
+  customerEmail?: string;
   /** Honeypot value; forwarded so the server can discard bot submissions. */
   companyWebsite?: string;
 }
@@ -26,6 +27,7 @@ export async function submitFeedback(
       message: input.message,
       customerName: input.customerName,
       customerPhone: input.customerPhone,
+      customerEmail: input.customerEmail,
       company_website: input.companyWebsite,
     }),
   });

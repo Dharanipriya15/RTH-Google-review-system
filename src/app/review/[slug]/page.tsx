@@ -38,6 +38,7 @@ export default async function ReviewPage({
       businessSlug={business.slug}
       businessName={business.name}
       positiveRatingMin={business.positiveRatingMin}
+      googleReviewUrl={business.googleReviewUrl}
     />
   );
 }
