@@ -28,16 +28,6 @@ function optional(value: string | undefined): string | undefined {
 }
 
 /**
- * Service-account private keys are often pasted into a single-line env var
- * with literal `\n` escapes (required by most hosts, including Vercel).
- * Turn those into real newlines so the PEM parses correctly.
- */
-function normalizePrivateKey(value: string | undefined): string | undefined {
-  const normalized = optional(value)?.replace(/\\n/g, "\n");
-  return normalized && normalized.includes("BEGIN PRIVATE KEY") ? normalized : undefined;
-}
-
-/**
  * Canonical site origin. Prefers an explicit NEXT_PUBLIC_SITE_URL, then falls
  * back to the Vercel-provided production domain (set automatically on Vercel),
  * then localhost for local dev. Used only server-side, for metadata.
@@ -72,40 +62,49 @@ export function getSupabasePublicConfig() {
 }
 
 /**
- * Google Sheets destination for 1–3★ (private) feedback, written via a
- * service account. `null` when any of the three required values is unset or
- * still a placeholder — callers must treat that as "not configured" and fail
- * loudly rather than silently skipping the write.
+ * Apps Script web app that records a 1–3★ submission: it appends one row to
+ * the Feedback sheet AND emails the owner. The Next.js server calls it once
+ * per submission. `null` when unset or still a placeholder — callers must
+ * treat that as "not configured" and fail loudly rather than silently
+ * dropping the submission.
  */
-export interface GoogleSheetsConfig {
-  spreadsheetId: string;
-  clientEmail: string;
-  privateKey: string;
-  /** Optional sheet/tab name; falls back to the first tab when unset. */
-  sheetName: string | undefined;
+export interface AppsScriptNotifyConfig {
+  /** The web-app deployment URL, ending in `/exec`. */
+  url: string;
+  /** Shared secret echoed in the POST body; the script rejects mismatches. */
+  secret: string;
 }
 
-function resolveGoogleSheetsConfig(): GoogleSheetsConfig | null {
-  const spreadsheetId = optional(process.env.GOOGLE_SHEETS_SPREADSHEET_ID);
-  const clientEmail = optional(process.env.GOOGLE_SHEETS_CLIENT_EMAIL);
-  const privateKey = normalizePrivateKey(process.env.GOOGLE_SHEETS_PRIVATE_KEY);
-  if (!spreadsheetId || !clientEmail || !privateKey) return null;
-  return {
-    spreadsheetId,
-    clientEmail,
-    privateKey,
-    sheetName: optional(process.env.GOOGLE_SHEETS_SHEET_NAME),
-  };
+function resolveAppsScriptNotifyConfig(): AppsScriptNotifyConfig | null {
+  const url = optional(process.env.APPS_SCRIPT_NOTIFY_URL);
+  const secret = optional(process.env.APPS_SCRIPT_NOTIFY_SECRET);
+  if (!url || !secret) return null;
+  // Reject the .env.example placeholders so a half-filled config reads as
+  // "not configured" and the submission fails loudly rather than every call
+  // to the webhook failing.
+  if (url.includes("DEPLOYMENT_ID") || /^replace-with-/i.test(secret)) return null;
+  let parsed: URL;
+  try {
+    parsed = new URL(url);
+  } catch {
+    return null;
+  }
+  const isLocal = parsed.hostname === "localhost" || parsed.hostname === "127.0.0.1";
+  // https everywhere; http only for a local mock during development.
+  if (parsed.protocol === "https:" || (parsed.protocol === "http:" && isLocal && process.env.NODE_ENV !== "production")) {
+    return { url, secret };
+  }
+  return null;
 }
 
 /**
  * Server-only config.
  *
  * Supabase credentials are REQUIRED — without them nothing works, so a missing
- * value throws loudly. Google Sheets credentials are read as a single
- * `googleSheets` object that is `null` when incomplete; `processFeedbackSubmission`
- * treats a missing config as a hard failure for 1–3★ submissions (it must never
- * report success without a row actually being written to the sheet).
+ * value throws loudly. `appsScriptNotify` is `null` when incomplete;
+ * `processFeedbackSubmission` treats that as a hard failure for 1–3★
+ * submissions (it must never report success without the sheet row + email
+ * actually happening).
  */
 export function getServerEnv() {
   return {
@@ -114,7 +113,7 @@ export function getServerEnv() {
       "SUPABASE_SERVICE_ROLE_KEY",
       process.env.SUPABASE_SERVICE_ROLE_KEY,
     ),
-    googleSheets: resolveGoogleSheetsConfig(),
+    appsScriptNotify: resolveAppsScriptNotifyConfig(),
     ipHashSalt: process.env.FEEDBACK_IP_HASH_SALT?.trim() || "raades-dev-salt",
     rateLimitMax: Number(process.env.RATE_LIMIT_MAX_PER_WINDOW ?? "3"),
     rateLimitWindowMs:

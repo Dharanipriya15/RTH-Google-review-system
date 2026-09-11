@@ -4,7 +4,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { getBusinessBySlug } from "@/lib/feedback/business";
 import { buildDedupeHash } from "@/lib/feedback/dedupe";
 import { normalizePhone, type FeedbackInput } from "@/lib/feedback/schema";
-import { appendFeedbackRow, isGoogleSheetsConfigured } from "@/lib/sheets/google-sheets";
+import { recordFeedback, isFeedbackSinkConfigured } from "@/lib/feedback/sink";
 import { GOOGLE_REVIEW_MIN_RATING, type FeedbackResponse } from "@/lib/feedback/types";
 
 interface SubmissionContext {
@@ -19,19 +19,30 @@ interface ServiceResult {
 
 const PG_UNIQUE_VIOLATION = "23505";
 
+const SINK_UNAVAILABLE_BODY: FeedbackResponse = {
+  ok: false,
+  error: "We couldn't record your feedback right now. Please try again shortly.",
+};
+
 /**
  * Persists a 1–3★ submission. 4–5★ ratings are redirected to Google entirely
  * client-side (see `FeedbackExperience`) and never reach this endpoint in the
  * normal flow; the threshold check below is a server-side backstop against a
  * tampered request, so a "positive" rating can never be written anywhere.
  *
- * On success the feedback is saved to Supabase (for the admin dashboard) and
- * appended to the Google Sheet, which is the client's primary record. The
- * Sheet write is authoritative: if it fails, the whole submission is reported
- * as failed to the customer, even though the Supabase row was already saved.
- * Whether the client is notified of the new row is handled entirely on the
- * Google Sheets side (an Apps Script trigger) — this code has no email or
- * notification step of its own.
+ * Two guarantees, each enforced by an independent idempotency key:
+ *   1. Exactly one DB row — the `feedback.dedupe_hash` unique index. A
+ *      double-click / retry with the same rating+phone+message inside the
+ *      10-minute window collides here instead of inserting again.
+ *   2. Exactly one sheet row + at most one email — the Apps Script web app
+ *      (`recordFeedback`) keys on the Supabase row id, so calling it again for
+ *      the same submission re-returns the first result and writes nothing new.
+ *
+ * The sink call is authoritative: if it fails, the submission is reported as
+ * failed to the customer (HTTP 502), even though the Supabase row was already
+ * saved. A customer retry re-runs the sink for real.
+ *
+ * No extra DB columns are required — this works against the base schema.
  */
 export async function processFeedbackSubmission(
   input: FeedbackInput,
@@ -48,6 +59,13 @@ export async function processFeedbackSubmission(
     return { status: 200, body: { ok: true, duplicate: false } };
   }
 
+  if (!isFeedbackSinkConfigured()) {
+    console.error(
+      "[feedback] Feedback sink is not configured (APPS_SCRIPT_NOTIFY_URL / APPS_SCRIPT_NOTIFY_SECRET); the submission was not recorded.",
+    );
+    return { status: 502, body: SINK_UNAVAILABLE_BODY };
+  }
+
   const supabase = createAdminClient();
   const phone = normalizePhone(input.customerPhone);
   const dedupeHash = buildDedupeHash({
@@ -57,9 +75,10 @@ export async function processFeedbackSubmission(
     message: input.message,
   });
 
+  // --- 1. One DB row -----------------------------------------------------------
   // customerEmail is intentionally omitted here: the Supabase `feedback` table
   // has no customer_email column (this insert is only a secondary copy for the
-  // admin dashboard). Email is captured in full on the Google Sheet row below.
+  // admin dashboard). Email is captured in full on the Google Sheet row.
   const { data: inserted, error: insertError } = await supabase
     .from("feedback")
     .insert({
@@ -74,10 +93,12 @@ export async function processFeedbackSubmission(
       ip_hash: context.ipHash,
       user_agent: context.userAgent,
     })
-    .select("id")
+    .select("id, created_at")
     .single();
 
   let feedbackId: string;
+  let createdAt: string;
+  let isDuplicate = false;
 
   if (insertError) {
     if (insertError.code !== PG_UNIQUE_VIOLATION) {
@@ -88,74 +109,57 @@ export async function processFeedbackSubmission(
       };
     }
 
-    // Same business/rating/phone/message within the last 10 minutes. If that
-    // original submission already made it into the Sheet, this is a genuine
-    // duplicate (double-click, retry) — report success without writing again.
-    // If it never made it into the Sheet (e.g. the earlier attempt hit a
-    // Sheets outage), fall through and retry the Sheet write for real, so a
-    // customer retrying after a failure is never told "success" for nothing.
-    const { data: existing } = await supabase
+    isDuplicate = true;
+    const { data: existing, error: existingError } = await supabase
       .from("feedback")
-      .select("id, sheet_synced_at")
+      .select("id, created_at")
       .eq("dedupe_hash", dedupeHash)
       .maybeSingle();
 
-    if (existing?.sheet_synced_at) {
-      return { status: 200, body: { ok: true, duplicate: true } };
+    if (existingError || !existing) {
+      console.error(
+        "[feedback] Could not load the existing row after a unique violation",
+        existingError,
+      );
+      return {
+        status: 500,
+        body: { ok: false, error: "Could not save your feedback. Please try again." },
+      };
     }
-    feedbackId = existing?.id ?? "";
+
+    feedbackId = existing.id;
+    createdAt = existing.created_at;
   } else {
     feedbackId = inserted.id;
+    createdAt = inserted.created_at;
   }
 
-  if (!isGoogleSheetsConfigured()) {
-    console.error(
-      "[feedback] Google Sheets is not configured; the submission was not recorded in the sheet.",
-    );
-    return {
-      status: 502,
-      body: {
-        ok: false,
-        error: "We couldn't record your feedback right now. Please try again shortly.",
-      },
-    };
-  }
+  // "Created At" comes from the (stable) Supabase row so it is identical across
+  // retries; the Apps Script also keys idempotency on `feedbackId`.
+  const createdAtIso = new Date(createdAt).toISOString();
 
+  // --- 2. One sheet row + one email (idempotent on feedbackId) ---------------
   try {
-    await appendFeedbackRow({
+    const result = await recordFeedback({
+      feedbackId,
+      businessName: business.name,
       rating: input.rating,
       customerName: input.customerName,
       customerPhone: input.customerPhone,
       customerEmail: input.customerEmail,
       message: input.message,
-      submittedAt: new Date(),
+      createdAtIso,
     });
+    console.info(
+      `[feedback] recorded ${feedbackId}: sheet row ${result.sheetRow}, emailed=${result.emailed}, deduped=${result.deduped}`,
+    );
   } catch (error) {
     console.error(
-      "[feedback] Google Sheets append failed",
+      "[feedback] Feedback sink failed",
       error instanceof Error ? error.message : error,
     );
-    return {
-      status: 502,
-      body: {
-        ok: false,
-        error: "We couldn't record your feedback right now. Please try again shortly.",
-      },
-    };
+    return { status: 502, body: SINK_UNAVAILABLE_BODY };
   }
 
-  if (feedbackId) {
-    const { error: syncError } = await supabase
-      .from("feedback")
-      .update({ sheet_synced_at: new Date().toISOString() })
-      .eq("id", feedbackId);
-    if (syncError) {
-      // The Sheet row is already written — this only affects our own retry
-      // bookkeeping, so log it but don't fail a submission that already
-      // succeeded from the customer's perspective.
-      console.error("[feedback] Failed to mark sheet_synced_at", syncError);
-    }
-  }
-
-  return { status: 201, body: { ok: true, duplicate: Boolean(insertError) } };
+  return { status: isDuplicate ? 200 : 201, body: { ok: true, duplicate: isDuplicate } };
 }

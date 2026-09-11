@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 import type { FeedbackFieldErrors, Rating } from "@/lib/feedback/types";
 import { submitFeedback } from "@/lib/feedback/submit-feedback";
 import { Button } from "@/components/ui/button";
@@ -32,6 +32,10 @@ export function FeedbackForm({
   const [errors, setErrors] = useState<FeedbackFieldErrors>({});
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  // Synchronous guard against a double submit (double-click, Enter + click):
+  // React state updates are async, so `isSubmitting` alone can still let a
+  // second submit event through before the first render disables the button.
+  const submitLockRef = useRef(false);
 
   function validate(): FeedbackFieldErrors {
     const next: FeedbackFieldErrors = {};
@@ -50,12 +54,16 @@ export function FeedbackForm({
 
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    if (isSubmitting) return;
+    if (submitLockRef.current || isSubmitting) return;
+    submitLockRef.current = true;
 
     const nextErrors = validate();
     setErrors(nextErrors);
     setSubmitError(null);
-    if (Object.keys(nextErrors).length > 0) return;
+    if (Object.keys(nextErrors).length > 0) {
+      submitLockRef.current = false;
+      return;
+    }
 
     const companyWebsite = new FormData(event.currentTarget).get("company_website");
 
@@ -70,6 +78,7 @@ export function FeedbackForm({
         customerEmail: email.trim() || undefined,
         companyWebsite: typeof companyWebsite === "string" ? companyWebsite : undefined,
       });
+      // Success — keep the button locked; the parent swaps this form out.
       onSuccess({ duplicate: result.duplicate });
     } catch (error) {
       setSubmitError(
@@ -78,6 +87,7 @@ export function FeedbackForm({
           : "We couldn't submit your feedback. Please try again.",
       );
       setIsSubmitting(false);
+      submitLockRef.current = false;
     }
   }
 
