@@ -15,12 +15,10 @@ export function ThankYouState({
       <div className="mx-auto flex justify-center">
         <SuccessMark />
       </div>
-      <h2 className="display-md mt-5 text-ink">
-        {isLowRating ? "Thank you for telling us" : "Thank you"}
-      </h2>
+      <h2 className="display-md mt-5 text-ink">Thank you</h2>
       <p className="mx-auto mt-2.5 max-w-sm text-sm leading-6 text-ink-muted">
         {isLowRating
-          ? "Your feedback goes straight to our team — privately, never to a public review site. We read every message and use it to do better."
+          ? "Thank you for bringing this to our attention. Your satisfaction is our priority. We will provide a resolution within one to two business days."
           : "We really appreciate you taking a moment to share how your visit went."}
       </p>
       <div className="mt-6">
