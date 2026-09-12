@@ -24,13 +24,13 @@ type Step =
 function RatingIntro({ isLowRating }: { isLowRating: boolean }) {
   return (
     <div className="animate-fade mt-7">
-      <p className="eyebrow">{isLowRating ? "In confidence" : "Almost done"}</p>
+      {!isLowRating && <p className="eyebrow">Almost done</p>}
       <h2 className="display-md mt-1.5 text-ink">
         {isLowRating ? "Tell us how we can do better" : "Add a few words"}
       </h2>
       <p className="mx-auto mt-2 max-w-sm text-sm leading-6 text-ink-muted">
         {isLowRating
-          ? "This goes privately to our team. It is never posted publicly or sent to Google."
+          ? "This feedback goes directly to the management"
           : "Optional — but we love hearing what made your visit special."}
       </p>
     </div>

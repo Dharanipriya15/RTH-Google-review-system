@@ -93,6 +93,20 @@ export function FeedbackForm({
 
   return (
     <form className="mt-6 space-y-4 text-left" noValidate onSubmit={handleSubmit}>
+      <TextArea
+        label={isLowRating ? "What went wrong?" : "Anything to add?"}
+        optional
+        maxLength={MESSAGE_MAX}
+        placeholder={
+          isLowRating
+            ? "Tell us what happened so we can put it right."
+            : "Share what made your visit memorable."
+        }
+        value={message}
+        onChange={(event) => setMessage(event.target.value)}
+        error={errors.message}
+      />
+
       <div className="grid gap-4 sm:grid-cols-2">
         <TextField
           label="Name"
@@ -126,20 +140,6 @@ export function FeedbackForm({
         value={email}
         onChange={(event) => setEmail(event.target.value)}
         error={errors.customerEmail}
-      />
-
-      <TextArea
-        label={isLowRating ? "What went wrong?" : "Anything to add?"}
-        optional
-        maxLength={MESSAGE_MAX}
-        placeholder={
-          isLowRating
-            ? "Tell us what happened so we can put it right."
-            : "Share what made your visit memorable."
-        }
-        value={message}
-        onChange={(event) => setMessage(event.target.value)}
-        error={errors.message}
       />
 
       {/* Honeypot — hidden from real users. */}

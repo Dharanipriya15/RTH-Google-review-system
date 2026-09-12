@@ -156,6 +156,7 @@ function maybeNotify_(sheet, rowNumber, rating, name, phone, customerEmail, mess
       'Customer Email: ' + (customerEmail || '-') + '\n' +
       'Message: ' + (message || '-') + '\n' +
       'Created At: ' + (createdAt || '-') + '\n\n' +
+      'Google Sheet: ' + sheet.getParent().getUrl() + '\n\n' +
       'Row ' + rowNumber + ' in the ' + SHEET_NAME + ' sheet.',
   });
 
