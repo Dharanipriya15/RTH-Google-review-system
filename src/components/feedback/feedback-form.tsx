@@ -39,26 +39,21 @@ export function FeedbackForm({
 
   function validate(): FeedbackFieldErrors {
     const next: FeedbackFieldErrors = {};
-    if (message.trim().length > MESSAGE_MAX) next.message = "Please shorten your message.";
 
-    const trimmedName = name.trim();
-    if (isLowRating && !trimmedName) {
-      next.customerName = "Please enter your name.";
-    } else if (trimmedName.length > NAME_MAX) {
-      next.customerName = "Please shorten your name.";
+    const trimmedMessage = message.trim();
+    if (isLowRating && !trimmedMessage) {
+      next.message = "Please tell us what went wrong.";
+    } else if (trimmedMessage.length > MESSAGE_MAX) {
+      next.message = "Please shorten your message.";
     }
 
+    if (name.trim().length > NAME_MAX) next.customerName = "Please shorten your name.";
     const trimmedPhone = phone.trim();
-    if (isLowRating && !trimmedPhone) {
-      next.customerPhone = "Please enter your phone number.";
-    } else if (trimmedPhone && !/^[+()\-\s\d]{6,32}$/.test(trimmedPhone)) {
+    if (trimmedPhone && !/^[+()\-\s\d]{6,32}$/.test(trimmedPhone)) {
       next.customerPhone = "Please enter a valid phone number.";
     }
-
     const trimmedEmail = email.trim();
-    if (isLowRating && !trimmedEmail) {
-      next.customerEmail = "Please enter your email address.";
-    } else if (trimmedEmail && (trimmedEmail.length > EMAIL_MAX || !EMAIL_PATTERN.test(trimmedEmail))) {
+    if (trimmedEmail && (trimmedEmail.length > EMAIL_MAX || !EMAIL_PATTERN.test(trimmedEmail))) {
       next.customerEmail = "Please enter a valid email address.";
     }
     return next;
@@ -107,7 +102,8 @@ export function FeedbackForm({
     <form className="mt-6 space-y-4 text-left" noValidate onSubmit={handleSubmit}>
       <TextArea
         label={isLowRating ? "What went wrong?" : "Anything to add?"}
-        optional
+        optional={!isLowRating}
+        required={isLowRating}
         maxLength={MESSAGE_MAX}
         placeholder={
           isLowRating
@@ -122,8 +118,7 @@ export function FeedbackForm({
       <div className="grid gap-4 sm:grid-cols-2">
         <TextField
           label="Name"
-          optional={!isLowRating}
-          required={isLowRating}
+          optional
           autoComplete="name"
           maxLength={NAME_MAX}
           value={name}
@@ -132,8 +127,7 @@ export function FeedbackForm({
         />
         <TextField
           label="Phone"
-          optional={!isLowRating}
-          required={isLowRating}
+          optional
           type="tel"
           inputMode="tel"
           autoComplete="tel"
@@ -146,8 +140,7 @@ export function FeedbackForm({
 
       <TextField
         label="Email"
-        optional={!isLowRating}
-        required={isLowRating}
+        optional
         type="email"
         inputMode="email"
         autoComplete="email"
