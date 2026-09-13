@@ -40,13 +40,25 @@ export function FeedbackForm({
   function validate(): FeedbackFieldErrors {
     const next: FeedbackFieldErrors = {};
     if (message.trim().length > MESSAGE_MAX) next.message = "Please shorten your message.";
-    if (name.trim().length > NAME_MAX) next.customerName = "Please shorten your name.";
+
+    const trimmedName = name.trim();
+    if (isLowRating && !trimmedName) {
+      next.customerName = "Please enter your name.";
+    } else if (trimmedName.length > NAME_MAX) {
+      next.customerName = "Please shorten your name.";
+    }
+
     const trimmedPhone = phone.trim();
-    if (trimmedPhone && !/^[+()\-\s\d]{6,32}$/.test(trimmedPhone)) {
+    if (isLowRating && !trimmedPhone) {
+      next.customerPhone = "Please enter your phone number.";
+    } else if (trimmedPhone && !/^[+()\-\s\d]{6,32}$/.test(trimmedPhone)) {
       next.customerPhone = "Please enter a valid phone number.";
     }
+
     const trimmedEmail = email.trim();
-    if (trimmedEmail && (trimmedEmail.length > EMAIL_MAX || !EMAIL_PATTERN.test(trimmedEmail))) {
+    if (isLowRating && !trimmedEmail) {
+      next.customerEmail = "Please enter your email address.";
+    } else if (trimmedEmail && (trimmedEmail.length > EMAIL_MAX || !EMAIL_PATTERN.test(trimmedEmail))) {
       next.customerEmail = "Please enter a valid email address.";
     }
     return next;
@@ -110,7 +122,8 @@ export function FeedbackForm({
       <div className="grid gap-4 sm:grid-cols-2">
         <TextField
           label="Name"
-          optional
+          optional={!isLowRating}
+          required={isLowRating}
           autoComplete="name"
           maxLength={NAME_MAX}
           value={name}
@@ -119,7 +132,8 @@ export function FeedbackForm({
         />
         <TextField
           label="Phone"
-          optional
+          optional={!isLowRating}
+          required={isLowRating}
           type="tel"
           inputMode="tel"
           autoComplete="tel"
@@ -132,7 +146,8 @@ export function FeedbackForm({
 
       <TextField
         label="Email"
-        optional
+        optional={!isLowRating}
+        required={isLowRating}
         type="email"
         inputMode="email"
         autoComplete="email"

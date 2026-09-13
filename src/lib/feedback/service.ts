@@ -5,7 +5,11 @@ import { getBusinessBySlug } from "@/lib/feedback/business";
 import { buildDedupeHash } from "@/lib/feedback/dedupe";
 import { normalizePhone, type FeedbackInput } from "@/lib/feedback/schema";
 import { recordFeedback, isFeedbackSinkConfigured } from "@/lib/feedback/sink";
-import { GOOGLE_REVIEW_MIN_RATING, type FeedbackResponse } from "@/lib/feedback/types";
+import {
+  GOOGLE_REVIEW_MIN_RATING,
+  type FeedbackFieldErrors,
+  type FeedbackResponse,
+} from "@/lib/feedback/types";
 
 interface SubmissionContext {
   ipHash: string | null;
@@ -57,6 +61,19 @@ export async function processFeedbackSubmission(
   if (input.rating >= googleThreshold) {
     // Hard rule: this endpoint never persists a "positive" rating anywhere.
     return { status: 200, body: { ok: true, duplicate: false } };
+  }
+
+  // Name/phone/email are mandatory on the low-rating form (mirrors the
+  // client's `isLowRating` requirement) so a direct API call can't bypass it.
+  const fieldErrors: FeedbackFieldErrors = {};
+  if (!input.customerName) fieldErrors.customerName = "Please enter your name.";
+  if (!input.customerPhone) fieldErrors.customerPhone = "Please enter your phone number.";
+  if (!input.customerEmail) fieldErrors.customerEmail = "Please enter your email address.";
+  if (Object.keys(fieldErrors).length > 0) {
+    return {
+      status: 400,
+      body: { ok: false, error: "Please check the form and try again.", fieldErrors },
+    };
   }
 
   if (!isFeedbackSinkConfigured()) {
